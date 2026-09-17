@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title }} | Neural Nexus{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+{% block content %}
+<div class="page-actions"><div><span class="eyebrow">PROJECT OPERATIONS</span><h2>{{ form_title }}</h2></div><a class="btn btn-ghost" href="{{ url_for('projects') }}">← Back</a></div>
+<form method="post" class="panel form-grid">
+  <label>Project Code<input name="project_code" value="{{ project.get('project_code','') if project else '' }}" placeholder="NN-PRJ-001"></label>
+  <label>Project Title *<input name="title" required value="{{ project.get('title','') if project else '' }}"></label>
+  <label>Student<select name="student_id"><option value="">Unassigned</option>{% for s in students %}<option value="{{ s.id }}" {% if project and project.student_id|string==s.id|string %}selected{% endif %}>{{ s.name }} — {{ s.register_no or 'No reg no' }}</option>{% endfor %}</select></label>
+  <label>Assigned Staff<select name="staff_id"><option value="">Unassigned</option>{% for s in staff %}<option value="{{ s.id }}" {% if project and project.staff_id|string==s.id|string %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></label>
+  <label>Domain<input name="domain" value="{{ project.get('domain','') if project else '' }}" placeholder="AI / Web / IoT / Embedded"></label>
+  <label>Technology<input name="technology" value="{{ project.get('technology','') if project else '' }}" placeholder="Python, React, ESP32..."></label>
+  <label>Priority<select name="priority">{% for x in ['Low','Normal','High','Urgent'] %}<option {% if project and project.priority==x %}selected{% endif %}>{{ x }}</option>{% endfor %}</select></label>
+  <label>Status<select name="status">{% for x in status_options %}<option {% if project and project.status==x %}selected{% endif %}>{{ x }}</option>{% endfor %}</select></label>
+  <label>Start Date<input type="date" name="start_date" value="{{ project.get('start_date','') if project else today }}"></label>
+  <label>Deadline<input type="date" name="deadline" value="{{ project.get('deadline','') if project else '' }}"></label>
+  <label>Project Amount (₹)<input type="number" step="0.01" min="0" name="amount" value="{{ project.get('amount',0) if project else 0 }}"></label>
+  <label>GitHub URL<input name="github_url" value="{{ project.get('github_url','') if project else '' }}" placeholder="https://github.com/..."></label>
+  <label class="full">Google Drive URL<input name="drive_url" value="{{ project.get('drive_url','') if project else '' }}" placeholder="https://drive.google.com/..."></label>
+  <label class="full">Notes<textarea name="notes" placeholder="Requirements, deliverables, client notes...">{{ project.get('notes','') if project else '' }}</textarea></label>
+  <div class="form-actions full"><a class="btn btn-ghost" href="{{ url_for('projects') }}">Cancel</a><button class="btn btn-primary">Save Project</button></div>
+</form>
+{% endblock %}

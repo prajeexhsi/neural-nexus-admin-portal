@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | Neural Nexus{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="hero">
+  <div>
+    <span class="eyebrow">OPERATIONS OVERVIEW</span>
+    <h2>Good morning, Neural Nexus.</h2>
+    <p>Track project delivery, student records and payments from one control centre.</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('project_new') }}">＋ New Project</a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card"><span>Students</span><strong>{{ students|length }}</strong><small>Registered records</small></div>
+  <div class="stat-card"><span>Projects</span><strong>{{ projects|length }}</strong><small>All project records</small></div>
+  <div class="stat-card"><span>Collected</span><strong>₹{{ "{:,.0f}".format(collected) }}</strong><small>Total payments</small></div>
+  <div class="stat-card accent"><span>Outstanding</span><strong>₹{{ "{:,.0f}".format(outstanding) }}</strong><small>Pending collection</small></div>
+</div>
+
+<div class="two-col">
+  <div class="panel">
+    <div class="panel-head"><div><span class="eyebrow">PROJECT PIPELINE</span><h3>Status overview</h3></div><a href="{{ url_for('projects') }}">View all →</a></div>
+    <div class="pipeline">
+      {% for s in status_options %}
+      <div class="pipe-row"><span>{{ s }}</span><div class="bar"><i style="width: {{ (status_counts.get(s,0) / (projects|length if projects|length else 1) * 100)|round(0) }}%"></i></div><b>{{ status_counts.get(s,0) }}</b></div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><div><span class="eyebrow">QUICK ACTIONS</span><h3>Workspace</h3></div></div>
+    <div class="quick-grid">
+      <a href="{{ url_for('student_new') }}" class="quick">＋<b>Add Student</b><small>Create a student record</small></a>
+      <a href="{{ url_for('project_new') }}" class="quick">◇<b>Create Project</b><small>Start project tracking</small></a>
+      <a href="{{ url_for('payments') }}" class="quick">₹<b>Record Payment</b><small>Update collections</small></a>
+      <a href="{{ url_for('reports') }}" class="quick">▤<b>Open Reports</b><small>Review business data</small></a>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head"><div><span class="eyebrow">RECENT PROJECTS</span><h3>Latest work</h3></div><a href="{{ url_for('projects') }}">Manage projects →</a></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Project</th><th>Status</th><th>Priority</th><th>Amount</th><th>Deadline</th></tr></thead>
+      <tbody>
+      {% for p in projects[:8] %}
+        <tr><td><b>{{ p.title }}</b><small>{{ p.project_code or 'No code' }}</small></td>
+          <td><span class="badge status-{{ (p.status or 'Enquiry')|lower|replace(' ','-') }}">{{ p.status }}</span></td>
+          <td><span class="priority {{ (p.priority or 'Normal')|lower }}">{{ p.priority }}</span></td>
+          <td>₹{{ "{:,.0f}".format(p.amount or 0) }}</td><td>{{ p.deadline or '—' }}</td></tr>
+      {% else %}
+        <tr><td colspan="5" class="empty">No projects yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

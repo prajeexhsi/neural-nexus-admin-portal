@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Not Found | Neural Nexus{% endblock %}
+{% block page_title %}Page not found{% endblock %}
+{% block content %}
+<div class="empty-page"><div class="login-mark">404</div><h2>That page does not exist.</h2><a class="btn btn-primary" href="{{ url_for('dashboard') }}">Back to dashboard</a></div>
+{% endblock %}

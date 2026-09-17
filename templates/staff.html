@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Staff | Neural Nexus{% endblock %}
+{% block page_title %}Staff{% endblock %}
+{% block content %}
+<div class="page-actions"><div><span class="eyebrow">TEAM MANAGEMENT</span><h2>Staff</h2><p class="muted">Maintain staff contacts and project assignment roles.</p></div></div>
+<div class="two-col">
+  <form method="post" action="{{ url_for('staff_new') }}" class="panel form-grid">
+    <div class="full"><span class="eyebrow">ADD STAFF</span><h3>Team member</h3></div>
+    <label class="full">Name *<input name="name" required></label>
+    <label>Email<input name="email" type="email"></label><label>Phone<input name="phone"></label>
+    <label>Role<input name="role" placeholder="Developer / Mentor / Admin"></label>
+    <label>Status<select name="status"><option>Active</option><option>Inactive</option></select></label>
+    <button class="btn btn-primary full">＋ Add Staff</button>
+  </form>
+  <div class="panel"><div class="panel-head"><div><span class="eyebrow">STAFF DIRECTORY</span><h3>Current team</h3></div></div>
+    <div class="staff-list">{% for s in staff %}
+      <div class="staff-row"><div class="avatar">{{ s.name[:1]|upper }}</div><div><b>{{ s.name }}</b><small>{{ s.role or 'Staff' }} · {{ s.email or 'No email' }}</small></div><span class="badge">{{ s.status }}</span>
+      <form method="post" action="{{ url_for('staff_delete', item_id=s.id) }}" onsubmit="return confirmDelete('staff member')"><button class="link-danger">Delete</button></form></div>
+    {% else %}<div class="empty">No staff records.</div>{% endfor %}</div>
+  </div>
+</div>
+{% endblock %}

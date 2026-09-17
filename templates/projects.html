@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Projects | Neural Nexus{% endblock %}
+{% block page_title %}Projects{% endblock %}
+{% block content %}
+<div class="page-actions"><div><span class="eyebrow">PROJECT OPERATIONS</span><h2>Projects</h2><p class="muted">Track delivery, staff assignment, deadlines and project value.</p></div><a class="btn btn-primary" href="{{ url_for('project_new') }}">＋ New Project</a></div>
+<div class="panel">
+  <form class="toolbar" method="get">
+    <input name="q" value="{{ q }}" placeholder="Search project, student, domain, technology...">
+    <select name="status"><option value="">All statuses</option>{% for s in status_options %}<option {% if status==s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+    <button class="btn btn-secondary">Filter</button>
+  </form>
+  <div class="table-wrap"><table>
+  <thead><tr><th>Project</th><th>Student</th><th>Staff</th><th>Status</th><th>Priority</th><th>Value</th><th>Deadline</th><th></th></tr></thead>
+  <tbody>{% for p in projects %}
+    <tr><td><b>{{ p.title }}</b><small>{{ p.project_code or 'No code' }} · {{ p.domain or 'General' }}</small></td>
+      <td>{{ p.student_name }}</td><td>{{ p.staff_name }}</td>
+      <td><span class="badge status-{{ (p.status or 'Enquiry')|lower|replace(' ','-') }}">{{ p.status }}</span></td>
+      <td><span class="priority {{ (p.priority or 'Normal')|lower }}">{{ p.priority }}</span></td>
+      <td>₹{{ "{:,.0f}".format(p.amount or 0) }}</td><td>{{ p.deadline or '—' }}</td>
+      <td class="actions"><a href="{{ url_for('project_edit', item_id=p.id) }}">Edit</a>
+      <form method="post" action="{{ url_for('project_delete', item_id=p.id) }}" onsubmit="return confirmDelete('project')"><button class="link-danger">Delete</button></form></td></tr>
+  {% else %}<tr><td colspan="8" class="empty">No projects found.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

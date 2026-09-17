@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title }} | Neural Nexus{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+{% block content %}
+<div class="page-actions"><div><span class="eyebrow">STUDENT DATABASE</span><h2>{{ form_title }}</h2></div><a class="btn btn-ghost" href="{{ url_for('students') }}">← Back</a></div>
+<form method="post" class="panel form-grid">
+  {% for key,label in [('student_code','Student ID'),('name','Full Name'),('register_no','Register Number'),('college','College'),('course','Course'),('department','Department'),('year','Year'),('phone','Phone'),('email','Email')] %}
+  <label>{{ label }}{% if key=='name' %} *{% endif %}<input name="{{ key }}" value="{{ student.get(key,'') if student else '' }}" {% if key=='name' %}required{% endif %}></label>
+  {% endfor %}
+  <label class="full">Address<textarea name="address">{{ student.get('address','') if student else '' }}</textarea></label>
+  <div class="form-actions full"><a class="btn btn-ghost" href="{{ url_for('students') }}">Cancel</a><button class="btn btn-primary">Save Student</button></div>
+</form>
+{% endblock %}

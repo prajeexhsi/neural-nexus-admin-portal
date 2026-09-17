@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}Neural Nexus Admin{% endblock %}</title>
+  <meta name="theme-color" content="#06101d">
+  <link rel="icon" href="{{ url_for('static', filename='images/neural-nexus-brand.jpg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <img src="{{ url_for('static', filename='images/neural-nexus-brand.jpg') }}" alt="Neural Nexus">
+      <div>
+        <strong>NEURAL NEXUS</strong>
+        <span>ADMIN PORTAL</span>
+      </div>
+    </div>
+    <nav>
+      <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint=='dashboard' %}active{% endif %}">▦ <span>Dashboard</span></a>
+      <a href="{{ url_for('students') }}" class="{% if request.endpoint in ['students','student_new','student_edit'] %}active{% endif %}">◉ <span>Students</span></a>
+      <a href="{{ url_for('projects') }}" class="{% if request.endpoint in ['projects','project_new','project_edit'] %}active{% endif %}">◇ <span>Projects</span></a>
+      <a href="{{ url_for('payments') }}" class="{% if request.endpoint in ['payments','payment_new'] %}active{% endif %}">₹ <span>Payments</span></a>
+      <a href="{{ url_for('staff') }}" class="{% if request.endpoint in ['staff','staff_new'] %}active{% endif %}">◎ <span>Staff</span></a>
+      <a href="{{ url_for('reports') }}" class="{% if request.endpoint=='reports' %}active{% endif %}">▤ <span>Reports</span></a>
+    </nav>
+    <div class="side-footer">
+      <div class="status-dot"></div>
+      <div>
+        <b>System Online</b>
+        <small>{% if using_supabase %}Supabase DB{% else %}Local Demo DB{% endif %}</small>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div>
+        <span class="eyebrow">NEURAL NEXUS</span>
+        <h1>{% block page_title %}Administrative & Staff Portal{% endblock %}</h1>
+      </div>
+      <div class="top-actions">
+        <span class="user-pill">● {{ session.get('username','Admin') }}</span>
+        <a class="btn btn-ghost" href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </header>
+
+    <section class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </section>
+  </main>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

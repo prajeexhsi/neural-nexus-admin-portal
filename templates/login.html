@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Neural Nexus | Secure Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-page">
+  <div class="login-grid">
+    <div class="login-brand-panel">
+      <img src="{{ url_for('static', filename='images/neural-nexus-brand.jpg') }}" alt="Neural Nexus">
+      <div class="brand-copy">
+        <span>ADVANCED AI SYSTEMS</span>
+        <h1>Administrative<br>& Staff Portal</h1>
+        <p>Manage students, projects, staff assignments, payments and reports from one secure workspace.</p>
+      </div>
+    </div>
+    <div class="login-card">
+      <div class="login-mark">N</div>
+      <span class="eyebrow">AUTHORIZED ACCESS</span>
+      <h2>Welcome back</h2>
+      <p class="muted">Sign in to the Neural Nexus internal portal.</p>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+      <form method="post" class="form-stack">
+        <label>Username<input name="username" autocomplete="username" required></label>
+        <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+        <button class="btn btn-primary btn-wide">Sign in →</button>
+      </form>
+      <small class="login-note">Authorized personnel only</small>
+    </div>
+  </div>
+</body>
+</html>

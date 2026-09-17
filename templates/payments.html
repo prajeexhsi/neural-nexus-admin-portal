@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Payments | Neural Nexus{% endblock %}
+{% block page_title %}Payments{% endblock %}
+{% block content %}
+<div class="page-actions"><div><span class="eyebrow">FINANCE</span><h2>Payments</h2><p class="muted">Record collections and keep project balances updated.</p></div></div>
+<div class="two-col">
+  <form method="post" action="{{ url_for('payment_new') }}" class="panel form-grid">
+    <div class="full"><span class="eyebrow">NEW PAYMENT</span><h3>Record collection</h3></div>
+    <label>Project<select name="project_id"><option value="">Select project</option>{% for p in projects %}<option value="{{ p.id }}">{{ p.title }} — ₹{{ "{:,.0f}".format(p.amount or 0) }}</option>{% endfor %}</select></label>
+    <label>Student<select name="student_id"><option value="">Select student</option>{% for s in students %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></label>
+    <label>Amount (₹) *<input type="number" step="0.01" min="0.01" name="amount" required></label>
+    <label>Payment Date<input type="date" name="payment_date" value="{{ today }}"></label>
+    <label>Method<select name="method"><option>UPI</option><option>Bank Transfer</option><option>Cash</option><option>Card</option><option>Other</option></select></label>
+    <label>Transaction ID<input name="transaction_id"></label>
+    <label class="full">Notes<textarea name="notes"></textarea></label>
+    <button class="btn btn-primary full">＋ Record Payment</button>
+  </form>
+  <div class="panel"><div class="panel-head"><div><span class="eyebrow">RECENT</span><h3>Payment history</h3></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Date</th><th>Project</th><th>Amount</th><th>Method</th><th></th></tr></thead>
+    <tbody>{% for p in payments %}
+      <tr><td>{{ p.payment_date or '—' }}</td><td><b>{{ p.project_title }}</b><small>{{ p.student_name }}</small></td><td>₹{{ "{:,.0f}".format(p.amount or 0) }}</td><td>{{ p.method or '—' }}</td>
+      <td><form method="post" action="{{ url_for('payment_delete', item_id=p.id) }}" onsubmit="return confirmDelete('payment')"><button class="link-danger">Delete</button></form></td></tr>
+    {% else %}<tr><td colspan="5" class="empty">No payments recorded.</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+</div>
+{% endblock %}

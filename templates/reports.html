@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Reports | Neural Nexus{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block content %}
+<div class="page-actions"><div><span class="eyebrow">ANALYTICS</span><h2>Reports</h2><p class="muted">A compact operational snapshot for management.</p></div></div>
+<div class="stats-grid">
+  <div class="stat-card"><span>Total project value</span><strong>₹{{ "{:,.0f}".format(total) }}</strong></div>
+  <div class="stat-card"><span>Collected</span><strong>₹{{ "{:,.0f}".format(paid) }}</strong></div>
+  <div class="stat-card accent"><span>Outstanding</span><strong>₹{{ "{:,.0f}".format(outstanding) }}</strong></div>
+  <div class="stat-card"><span>Completion records</span><strong>{{ by_status.get('Completed',0) + by_status.get('Delivered',0) }}</strong></div>
+</div>
+<div class="two-col">
+  <div class="panel"><div class="panel-head"><div><span class="eyebrow">PROJECT STATUS</span><h3>Distribution</h3></div></div>
+    {% for key,val in by_status.items() %}<div class="report-row"><span>{{ key }}</span><b>{{ val }}</b></div>{% else %}<div class="empty">No project data.</div>{% endfor %}
+  </div>
+  <div class="panel"><div class="panel-head"><div><span class="eyebrow">DATA COUNTS</span><h3>Records</h3></div></div>
+    <div class="report-row"><span>Students</span><b>{{ students|length }}</b></div>
+    <div class="report-row"><span>Projects</span><b>{{ projects|length }}</b></div>
+    <div class="report-row"><span>Payments</span><b>{{ payments|length }}</b></div>
+    <div class="report-row"><span>Staff</span><b>{{ staff|length }}</b></div>
+  </div>
+</div>
+<div class="panel">
+  <div class="panel-head"><div><span class="eyebrow">EXPORT-READY VIEW</span><h3>Project register</h3></div></div>
+  <div class="table-wrap"><table><thead><tr><th>Code</th><th>Project</th><th>Status</th><th>Value</th><th>Deadline</th></tr></thead><tbody>
+  {% for p in projects %}<tr><td>{{ p.project_code or '—' }}</td><td><b>{{ p.title }}</b><small>{{ p.domain or '' }}</small></td><td><span class="badge">{{ p.status }}</span></td><td>₹{{ "{:,.0f}".format(p.amount or 0) }}</td><td>{{ p.deadline or '—' }}</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endblock %}
