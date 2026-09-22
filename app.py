@@ -12,7 +12,7 @@ try:
 except Exception:
     create_client = None
 
-load_dotenv()
+load_dotenv(override=True)
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-in-production")
@@ -508,7 +508,6 @@ def not_found(_):
     return render_template("404.html"), 404
 
 
-db_init()
-
 if __name__ == "__main__":
+    db_init()
     app.run(debug=True, host="127.0.0.1", port=8000)
