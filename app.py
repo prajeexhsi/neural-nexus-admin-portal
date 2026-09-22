@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import tempfile
 from datetime import date, datetime
 from functools import wraps
 
@@ -29,7 +30,10 @@ USE_SUPABASE = bool(
     and "YOUR_SUPABASE_SERVICE_ROLE_KEY" not in SUPABASE_KEY
 )
 
-DEMO_DB = os.path.join(os.path.dirname(__file__), "neural_nexus_demo.db")
+DEMO_DB = os.path.join(
+    tempfile.gettempdir() if os.getenv("VERCEL") else os.path.dirname(__file__),
+    "neural_nexus_demo.db"
+)
 
 
 def db_init():
@@ -114,6 +118,9 @@ def db_init():
         )
     con.commit()
     con.close()
+
+
+db_init()
 
 
 def local_query(sql, params=()):
