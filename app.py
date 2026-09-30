@@ -2,6 +2,7 @@ import os
 import sqlite3
 import tempfile
 from datetime import date, datetime
+from decimal import Decimal, ROUND_HALF_UP
 from functools import wraps
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
@@ -82,8 +83,27 @@ def db_init():
         notes TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS bills (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        bill_no TEXT UNIQUE,
+        project_id INTEGER,
+        student_id INTEGER,
+        student_name TEXT NOT NULL,
+        college TEXT,
+        phone TEXT,
+        email TEXT,
+        project_name TEXT,
+        project_type TEXT,
+        domain TEXT,
+        duration TEXT,
+        description TEXT,
+        total_amount REAL NOT NULL DEFAULT 0,
+        notes TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS payments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        bill_id INTEGER,
         project_id INTEGER,
         student_id INTEGER,
         amount REAL NOT NULL DEFAULT 0,
@@ -94,6 +114,9 @@ def db_init():
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     """)
+    payment_columns = {row[1] for row in cur.execute("PRAGMA table_info(payments)")}
+    if "bill_id" not in payment_columns:
+        cur.execute("ALTER TABLE payments ADD COLUMN bill_id INTEGER")
     # Seed only when the local demo database is empty.
     if cur.execute("SELECT COUNT(*) FROM staff").fetchone()[0] == 0:
         cur.execute(
@@ -416,35 +439,165 @@ def project_delete(item_id):
 @app.route("/payments")
 @login_required
 def payments():
-    rows = data("payments")
+    bills = data("bills")
+    payment_rows = data("payments")
     projects_list = data("projects")
     students_list = data("students")
-    pmap = {p["id"]: p["title"] for p in projects_list}
-    smap = {s["id"]: s["name"] for s in students_list}
-    for r in rows:
-        r["project_title"] = pmap.get(r.get("project_id"), "—")
-        r["student_name"] = smap.get(r.get("student_id"), "—")
-    return render_template("payments.html", payments=rows, projects=projects_list, students=students_list)
+    bill_map = {bill["id"]: bill for bill in bills}
+    project_map = {project["id"]: project for project in projects_list}
+    student_map = {student["id"]: student for student in students_list}
+    paid_by_bill = {}
+    for payment in payment_rows:
+        bill_id = payment.get("bill_id")
+        if bill_id is not None:
+            paid_by_bill[bill_id] = paid_by_bill.get(bill_id, 0) + float(payment.get("amount") or 0)
+        bill = bill_map.get(bill_id) or {}
+        project = project_map.get(payment.get("project_id")) or {}
+        student = student_map.get(payment.get("student_id")) or {}
+        payment["bill_no"] = bill.get("bill_no") or "Legacy payment"
+        payment["project_title"] = bill.get("project_name") or project.get("title") or "—"
+        payment["student_name"] = bill.get("student_name") or student.get("name") or "—"
+    for bill in bills:
+        bill["paid_amount"] = paid_by_bill.get(bill["id"], 0)
+        bill["balance"] = max(float(bill.get("total_amount") or 0) - bill["paid_amount"], 0)
+        bill["status"] = "PAID" if bill["balance"] == 0 else ("PARTIAL" if bill["paid_amount"] else "PENDING")
+    return render_template("payments.html", bills=bills, projects=projects_list,
+                           students=students_list, payment_history=payment_rows)
 
 
 @app.post("/payments/new")
 @login_required
 def payment_new():
-    payload = {
-        "project_id": int(request.form["project_id"]) if request.form.get("project_id") else None,
-        "student_id": int(request.form["student_id"]) if request.form.get("student_id") else None,
-        "amount": float(request.form.get("amount") or 0),
+    try:
+        project_id = int(request.form["project_id"]) if request.form.get("project_id") else None
+        student_id = int(request.form["student_id"]) if request.form.get("student_id") else None
+        total_amount = float(request.form.get("total_amount") or 0)
+        amount_paid = float(request.form.get("amount_paid") or 0)
+    except ValueError:
+        flash("Enter valid project, student, and payment amounts.", "danger")
+        return redirect(url_for("payments"))
+
+    if total_amount <= 0 or amount_paid < 0 or amount_paid > total_amount:
+        flash("Total must be positive and the initial payment cannot exceed it.", "danger")
+        return redirect(url_for("payments"))
+
+    project = one("projects", project_id) if project_id else None
+    student = one("students", student_id) if student_id else None
+    student_name = request.form.get("student_name", "").strip() or (student or {}).get("name", "")
+    if not student_name:
+        flash("Student name is required.", "danger")
+        return redirect(url_for("payments"))
+
+    bill = insert("bills", {
+        "project_id": project_id,
+        "student_id": student_id,
+        "student_name": student_name,
+        "college": request.form.get("college", "").strip() or (student or {}).get("college", ""),
+        "phone": request.form.get("phone", "").strip() or (student or {}).get("phone", ""),
+        "email": request.form.get("email", "").strip() or (student or {}).get("email", ""),
+        "project_name": request.form.get("project_name", "").strip() or (project or {}).get("title", ""),
+        "project_type": request.form.get("project_type", "").strip(),
+        "domain": request.form.get("domain", "").strip() or (project or {}).get("domain", ""),
+        "duration": request.form.get("duration", "").strip(),
+        "description": request.form.get("description", "").strip(),
+        "total_amount": total_amount,
+        "notes": request.form.get("notes", "").strip(),
+    })[0]
+    bill_no = f"NN-{date.today().year}-{int(bill['id']):04d}"
+    update("bills", bill["id"], {"bill_no": bill_no})
+    if amount_paid > 0:
+        insert("payments", {
+            "bill_id": bill["id"],
+            "project_id": project_id,
+            "student_id": student_id,
+            "amount": amount_paid,
+            "payment_date": request.form.get("payment_date") or str(date.today()),
+            "method": request.form.get("method", "UPI"),
+            "transaction_id": request.form.get("transaction_id", "").strip(),
+            "notes": request.form.get("payment_notes", "").strip(),
+        })
+    return redirect(url_for("bill_view", item_id=bill["id"]))
+
+
+def amount_in_words(value):
+    ones = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+            "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+            "Seventeen", "Eighteen", "Nineteen"]
+    tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+
+    def under_thousand(number):
+        words = []
+        if number >= 100:
+            words.extend((ones[number // 100], "Hundred"))
+            number %= 100
+        if number >= 20:
+            words.append(tens[number // 10])
+            number %= 10
+        if number:
+            words.append(ones[number])
+        return " ".join(words)
+
+    def indian_number(number):
+        if number < 1000:
+            return under_thousand(number)
+        for divisor, label in ((10000000, "Crore"), (100000, "Lakh"), (1000, "Thousand")):
+            if number >= divisor:
+                quotient, remainder = divmod(number, divisor)
+                words = f"{indian_number(quotient)} {label}"
+                return f"{words} {indian_number(remainder)}" if remainder else words
+
+    amount = Decimal(str(value or 0)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    rupees = int(amount)
+    paise = int((amount - rupees) * 100)
+    result = f"{indian_number(rupees)} Rupees"
+    if paise:
+        result += f" and {indian_number(paise)} Paise"
+    return f"{result} Only"
+
+
+@app.route("/payments/<int:item_id>/bill")
+@login_required
+def bill_view(item_id):
+    bill = one("bills", item_id)
+    if not bill:
+        return redirect(url_for("payments"))
+    entries = [payment for payment in data("payments") if payment.get("bill_id") == item_id]
+    entries.sort(key=lambda payment: (payment.get("payment_date") or "", payment.get("id") or 0))
+    paid_amount = sum(float(payment.get("amount") or 0) for payment in entries)
+    balance = max(float(bill.get("total_amount") or 0) - paid_amount, 0)
+    status = "PAID" if balance == 0 else ("PARTIAL" if paid_amount else "PENDING")
+    return render_template("bill.html", bill=bill, payments=entries,
+                           paid_amount=paid_amount, balance=balance, status=status,
+                           amount_words=amount_in_words(bill.get("total_amount")))
+
+
+@app.post("/payments/<int:item_id>/add")
+@login_required
+def bill_add_payment(item_id):
+    bill = one("bills", item_id)
+    if not bill:
+        return redirect(url_for("payments"))
+    try:
+        amount = float(request.form.get("amount") or 0)
+    except ValueError:
+        amount = 0
+    existing = [payment for payment in data("payments") if payment.get("bill_id") == item_id]
+    paid_amount = sum(float(payment.get("amount") or 0) for payment in existing)
+    balance = max(float(bill.get("total_amount") or 0) - paid_amount, 0)
+    if amount <= 0 or amount > balance:
+        flash("Payment must be greater than zero and no more than the remaining balance.", "danger")
+        return redirect(url_for("bill_view", item_id=item_id))
+    insert("payments", {
+        "bill_id": item_id,
+        "project_id": bill.get("project_id"),
+        "student_id": bill.get("student_id"),
+        "amount": amount,
         "payment_date": request.form.get("payment_date") or str(date.today()),
-        "method": request.form.get("method","UPI"),
-        "transaction_id": request.form.get("transaction_id","").strip(),
-        "notes": request.form.get("notes","").strip(),
-    }
-    if payload["amount"] <= 0:
-        flash("Payment amount must be greater than zero.", "danger")
-    else:
-        insert("payments", payload)
-        flash("Payment recorded.", "success")
-    return redirect(url_for("payments"))
+        "method": request.form.get("method", "UPI"),
+        "transaction_id": request.form.get("transaction_id", "").strip(),
+        "notes": request.form.get("notes", "").strip(),
+    })
+    return redirect(url_for("bill_view", item_id=item_id))
 
 
 @app.post("/payments/<int:item_id>/delete")

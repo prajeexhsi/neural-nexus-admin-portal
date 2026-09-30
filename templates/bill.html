@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ bill.bill_no }} | Neural Nexus</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bill-page">
+  <div class="bill-toolbar no-print">
+    <a class="btn btn-ghost" href="{{ url_for('payments') }}">Back to Payments</a>
+    <div>
+      {% if balance > 0 %}<a class="btn btn-secondary" href="#add-payment">Add Payment</a>{% endif %}
+      <button class="btn btn-primary" onclick="window.print()">Print / Save PDF</button>
+    </div>
+  </div>
+  <main class="invoice">
+    <header class="invoice-header">
+      <div class="invoice-brand">
+        <img src="{{ url_for('static', filename='images/neural-nexus-brand.jpg') }}" alt="Neural Nexus logo">
+        <div><h1>NEURAL <span>NEXUS</span></h1><p>AI · ML · IoT · Embedded · Academic Projects</p></div>
+      </div>
+      <div class="invoice-slogan">Innovating Ideas<br>Building Futures</div>
+    </header>
+    <div class="invoice-services"><span>Student Projects</span><span>Minor &amp; Major Projects</span><span>Hardware &amp; Software</span><span>AI &amp; IoT Solutions</span></div>
+    <div class="invoice-contact"><span>9567088095, 9995321727</span><span>neuralnexus.projects@gmail.com</span><span>Kerala, India</span></div>
+    <section class="invoice-title">
+      <div><h2>PAYMENT RECEIPT</h2><p>THANK YOU FOR CHOOSING NEURAL NEXUS</p></div>
+      <dl><dt>Bill No</dt><dd>{{ bill.bill_no }}</dd><dt>Date</dt><dd>{{ bill.created_at[:10] if bill.created_at else today }}</dd><dt>Payment Status</dt><dd class="invoice-status">{{ status }}</dd></dl>
+    </section>
+    <section class="invoice-details">
+      <div class="invoice-box">
+        <h3>CUSTOMER / STUDENT DETAILS</h3>
+        <dl><dt>Student Name</dt><dd>{{ bill.student_name or '—' }}</dd><dt>College / Institution</dt><dd>{{ bill.college or '—' }}</dd><dt>Phone Number</dt><dd>{{ bill.phone or '—' }}</dd><dt>Email</dt><dd>{{ bill.email or '—' }}</dd></dl>
+      </div>
+      <div class="invoice-box">
+        <h3>PROJECT DETAILS</h3>
+        <dl><dt>Project Name</dt><dd>{{ bill.project_name or '—' }}</dd><dt>Project Type</dt><dd>{{ bill.project_type or '—' }}</dd><dt>Domain</dt><dd>{{ bill.domain or '—' }}</dd><dt>Project Duration</dt><dd>{{ bill.duration or '—' }}</dd></dl>
+      </div>
+    </section>
+    <table class="invoice-items">
+      <thead><tr><th>SL No.</th><th>Description</th><th>Qty</th><th>Amount (₹)</th></tr></thead>
+      <tbody><tr><td>1</td><td>{{ bill.description or bill.project_name or 'Project services' }}</td><td>1</td><td>{{ "{:,.2f}".format(bill.total_amount or 0) }}</td></tr></tbody>
+    </table>
+    <section class="invoice-summary">
+      <div class="invoice-words"><strong>Amount in Words:</strong><p id="amountWords">{{ amount_words }}</p></div>
+      <table><tbody><tr><th>Total Amount</th><td>₹ {{ "{:,.2f}".format(bill.total_amount or 0) }}</td></tr><tr><th>Amount Paid</th><td>₹ {{ "{:,.2f}".format(paid_amount) }}</td></tr><tr class="invoice-balance"><th>Balance Due</th><td>₹ {{ "{:,.2f}".format(balance) }}</td></tr></tbody></table>
+    </section>
+    <section class="invoice-payment-notes">
+      <div class="invoice-box"><h3>PAYMENT INFORMATION</h3>
+        {% if payments %}<dl><dt>Latest Method</dt><dd>{{ payments[-1].method or '—' }}</dd><dt>Transaction ID</dt><dd>{{ payments[-1].transaction_id or '—' }}</dd><dt>Payment Date</dt><dd>{{ payments[-1].payment_date or '—' }}</dd><dt>Amount Received</dt><dd>₹ {{ "{:,.2f}".format(payments[-1].amount or 0) }}</dd></dl>{% else %}<p class="invoice-empty">No payment received yet.</p>{% endif %}
+      </div>
+      <div class="invoice-box"><h3>NOTES</h3><p class="invoice-notes">{{ bill.notes or '—' }}</p></div>
+    </section>
+    {% if payments|length > 1 %}
+    <section class="invoice-history no-print"><h3>Payment History</h3><table><thead><tr><th>Date</th><th>Method</th><th>Transaction ID</th><th>Amount</th></tr></thead><tbody>{% for payment in payments %}<tr><td>{{ payment.payment_date or '—' }}</td><td>{{ payment.method or '—' }}</td><td>{{ payment.transaction_id or '—' }}</td><td>₹ {{ "{:,.2f}".format(payment.amount or 0) }}</td></tr>{% endfor %}</tbody></table></section>
+    {% endif %}
+    <section class="invoice-signatures">
+      <div><div class="signature-script">Prajeesh. S</div><div class="signature-rule"></div><strong>Prajeesh. S</strong><span>Founder &amp; Team Head</span><b>Neural Nexus</b></div>
+      <div class="invoice-seal"><strong>NEURAL NEXUS</strong><span>NN</span><small>Kerala, India</small></div>
+      <div class="customer-sign"><div class="signature-rule"></div><span>Customer Signature</span></div>
+    </section>
+    <footer class="invoice-footer"><span>Student Projects · Minor &amp; Major Projects · Hardware &amp; Software · AI &amp; IoT</span><strong>Innovation · Intelligence · Technology</strong></footer>
+  </main>
+  {% if balance > 0 %}
+  <section id="add-payment" class="panel invoice-add-payment no-print">
+    <span class="eyebrow">INSTALLMENT</span><h2>Add Payment</h2><p class="muted">Outstanding balance: ₹{{ "{:,.2f}".format(balance) }}</p>
+    <form method="post" action="{{ url_for('bill_add_payment', item_id=bill.id) }}" class="form-grid">
+      <label>Amount (₹) *<input type="number" name="amount" min="0.01" max="{{ balance }}" step="0.01" required></label>
+      <label>Payment Date<input type="date" name="payment_date" value="{{ today }}"></label>
+      <label>Payment Method<select name="method"><option>UPI</option><option>Bank Transfer</option><option>Cash</option><option>Card</option><option>Other</option></select></label>
+      <label>Transaction ID<input name="transaction_id"></label>
+      <label class="full">Notes<input name="notes"></label>
+      <button class="btn btn-primary full">Save Payment</button>
+    </form>
+  </section>
+  {% endif %}
+</body>
+</html>
